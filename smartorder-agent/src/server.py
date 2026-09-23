@@ -1,11 +1,11 @@
- 
+
  
 from flask import Flask, jsonify, request 
 import json
 
 app = Flask(__name__)
 
-with open("data/orders.json", "r") as file:
+with open("smartorder-agent/data/orders.json", "r") as file:
     orders = json.load(file)
     
     
