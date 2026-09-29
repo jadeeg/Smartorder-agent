@@ -27,7 +27,7 @@ const handleSend = async () => {
   setInput("");
 
   try {
-    const response = await fetch("http://127.0.0.1:5000/chat", {
+    const response = await fetch("https://smartorder-agent.onrender.com/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
