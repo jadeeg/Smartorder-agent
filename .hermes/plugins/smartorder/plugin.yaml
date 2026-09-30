@@ -5,32 +5,5 @@ author: SmartOrder
 kind: standalone
 
 provides_tools:
-  - name: get_order
-    description: Retrieve the customer's SmartOrder after verifying both order number and email. Use for order-specific details.
-    parameters:
-      type: object
-      properties:
-        order_id:
-          type: string
-          description: The customer's order number.
-        email:
-          type: string
-          description: The email address used for the order.
-      required:
-        - order_id
-        - email
-
-  - name: check_delivery
-    description: Check where a SmartOrder is, its shipping status, and estimated delivery. Requires order number and order email.
-    parameters:
-      type: object
-      properties:
-        order_id:
-          type: string
-          description: The customer's order number.
-        email:
-          type: string
-          description: The email address used for the order.
-      required:
-        - order_id
-        - email
+  - get_order
+  - check_delivery
