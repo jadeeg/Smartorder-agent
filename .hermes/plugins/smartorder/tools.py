@@ -1,12 +1,14 @@
+import os
+
 import requests
 
-API_URL = "https://smartorder-agent.onrender.com"
+API_URL = os.getenv("SMARTORDER_API_URL", "http://127.0.0.1:5000")
 
 
 def get_order(order_id, email):
     """Retrieve an order after verifying its ID against the customer's email."""
     response = requests.get(
-        f"{API_URL}/customer/orders/{order_id}",
+        f"{API_URL}/orders/{order_id}",
         params={"email": email},
         timeout=10,
     )

@@ -11,51 +11,61 @@ function App() {
 
   const [input, setInput] = useState("");
 
-const handleSend = async () => {
-  const text = input.trim();
+  const handleSend = async () => {
+    const text = input.trim();
 
-  if (!text) return;
+    if (!text) return;
 
-  setMessages((current) => [
-    ...current,
-    {
-      sender: "user",
-      text,
-    },
-  ]);
-
-  setInput("");
-
-  try {
-    const response = await fetch("https://smartorder-agent.onrender.com/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: text,
-      }),
-    });
-
-    const data = await response.json();
+    const conversation = [...messages, { sender: "user", text }];
 
     setMessages((current) => [
       ...current,
       {
-        sender: "bot",
-        text: data.response,
+        sender: "user",
+        text,
       },
     ]);
-  } catch (error) {
-    setMessages((current) => [
-      ...current,
-      {
-        sender: "bot",
-        text: "Sorry, I couldn't connect to SmartOrder.",
-      },
-    ]);
-  }
-}; 
+
+    setInput("");
+
+    try {
+      const apiUrl =
+        import.meta.env.VITE_API_URL || "https://smartorder-agent.onrender.com";
+      const response = await fetch(`${apiUrl}/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: conversation.map((message) => ({
+            role: message.sender === "bot" ? "assistant" : "user",
+            content: message.text,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "SmartOrder request failed");
+      }
+
+      setMessages((current) => [
+        ...current,
+        {
+          sender: "bot",
+          text: data.response,
+        },
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          sender: "bot",
+          text: "Sorry, I couldn't connect to SmartOrder.",
+        },
+      ]);
+    }
+  };
 
   const handleKeyDown = (event) => {
     if (event.key === "Enter") {

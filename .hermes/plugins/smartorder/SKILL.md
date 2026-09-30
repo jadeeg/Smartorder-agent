@@ -1,6 +1,7 @@
 ---
 name: smartorder
-description: Use when a customer asks about a SmartOrder order, such as "where is my order", tracking, shipping status, or delivery dates. Use SmartOrder tools for order-specific facts.
+description: Alwyas use the SmartOrder tool 
+ Use when a customer asks about a SmartOrder order, such as "where is my order", tracking, shipping status, or delivery dates.
 ---
 
 # SmartOrder Support
@@ -11,4 +12,3 @@ For delivery status, use `check_delivery`. It requires the order number and the 
 
 Only order lookup and delivery tracking are implemented by the available tools. Do not claim to cancel an order, promise a refund, or arrange a human transfer.
 
-For unrelated requests, answer normally rather than forcing them into SmartOrder support.

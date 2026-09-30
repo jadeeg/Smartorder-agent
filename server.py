@@ -1,12 +1,27 @@
 import os
+import json
+import requests
+
 from pathlib import Path
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from flask import Flask, jsonify, request
-import json
+print("REQUESTS LOADED:", requests.__file__)
 
+
+
+HERMES_URL = os.getenv(
+    "HERMES_URL",
+    "http://127.0.0.1:8642/v1/chat/completions",
+)
+HERMES_API_KEY = os.getenv(
+    "HERMES_API_KEY",
+    "smartorder-local-key"
+)
 app = Flask(__name__)
 CORS(app)
+
+
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_PATH = BASE_DIR / "data" / "orders.json"
@@ -27,65 +42,88 @@ orders = load_orders()
 
 @app.get("/orders/<order_id>")
 def get_order(order_id):
+    email = request.args.get("email", "").strip().lower()
+    if not email:
+        return jsonify({"error": "Email is required"}), 400
+
     order = next(
-        (order for order in orders if order["orderId"] == order_id),
+        (
+            order for order in orders
+            if order["orderId"] == order_id
+            and order["email"].lower() == email
+        ),
         None,
     )
     if not order:
-        return jsonify({"error": "Order not found"}), 404
+        return jsonify({"error": "Order not found or verification failed"}), 404
     return jsonify(order)
 
 
 @app.get("/orders")
 def find_order():
-    email = request.args.get("email")
-    if not email:
-        return jsonify({"error": "Email is required"}), 400
-    matching_orders = [
-        order for order in orders
-        if order["email"].lower() == email.lower()
-    ]
-    return jsonify(matching_orders)
+    order_id = request.args.get("order_id", "").strip()
+    email = request.args.get("email", "").strip().lower()
+    if not order_id or not email:
+        return jsonify({"error": "Order ID and email are required"}), 400
+
+    order = next(
+        (
+            order for order in orders
+            if order["orderId"] == order_id
+            and order["email"].lower() == email
+        ),
+        None,
+    )
+    if not order:
+        return jsonify({"error": "Order not found or verification failed"}), 404
+    return jsonify(order)
 
 
 @app.post("/chat")
 def chat():
-    data = request.get_json()
+    try:
+        data = request.get_json() or {}
 
-    message = data.get("message", "").strip()
+        messages = data.get("messages", [])
 
-    if not message:
-        return jsonify({
-            "response": "Please enter a message."
-        }), 400
-
-    # Temporary chatbot logic for testing React ↔ Flask
-    if "12345" in message:
-        order = next(
-            (
-                order for order in orders
-                if order["orderId"] == "12345"
-            ),
-            None
-        )
-
-        if order:
+        if not messages:
             return jsonify({
-                "response": (
-                    f"Order #{order['orderId']} is currently "
-                    f"{order['status']}. "
-                    f"It is expected to arrive by "
-                    f"{order['estimatedDelivery']}."
-                )
-            })
+                "error": "Messages are required"
+            }), 400
 
-    return jsonify({
-        "response": (
-            "I can help with delivery tracking, "
-            "order cancellation, cancellation policies, "
-            "or connecting you with a support agent."
+        response = requests.post(
+            HERMES_URL,
+            headers={
+                "Authorization": f"Bearer {HERMES_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "hermes-agent",
+                "messages": messages,
+                "stream": False,
+            },
+            timeout=120,
         )
-    })
+
+        print("Hermes status:", response.status_code)
+        print("Hermes response:", response.text)
+
+        response.raise_for_status()
+
+        result = response.json()
+
+        assistant_message = result["choices"][0]["message"]["content"]
+
+        return jsonify({
+            "response": assistant_message
+        })
+
+    except Exception as error:
+        print("CHAT ERROR:", repr(error))
+
+        return jsonify({
+            "error": str(error)
+        }), 500
 
 if __name__ == "__main__":
     
